@@ -1,0 +1,27 @@
+HTR-ViTRNN/.venv/
+HTR-ViTRNN/__pycache__/
+HTR-ViTRNN/*.pyc
+HTR-ViTRNN/output/
+HTR-ViTRNN/data/viet_hf_v2/
+HTR-ViTRNN/backend_runs/
+HTR-ViTRNN/outputs_dococr*/
+HTR-ViTRNN/.pytest_cache/
+HTR-ViTRNN/backups/
+
+# Frontend builds and dependencies
+HTR-ViTRNN/frontend/node_modules/
+HTR-ViTRNN/frontend/.next/
+HTR-ViTRNN/frontend/out/
+HTR-ViTRNN/frontend/.env*.local
+HTR-ViTRNN/frontend/.env
+HTR-ViTRNN/.env
+.vscode/
+__pycache__/
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+*.egg-info/
+dist/
+

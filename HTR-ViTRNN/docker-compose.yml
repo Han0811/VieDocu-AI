@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ocr_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: ocr_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////app/backend_runs/jobs.sqlite3
+      - REDIS_URL=redis://redis:6379/0
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - MAX_UPLOAD_MB=100
+      - MAX_PDF_PAGES=50
+      - PDF_DPI=220
+      - ENABLE_API_KEY=false
+    volumes:
+      - ocr_runs:/app/backend_runs
+      - ./output:/app/output
+    depends_on:
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker.gpu
+    container_name: ocr_worker
+    restart: always
+    environment:
+      - DATABASE_URL=sqlite:////app/backend_runs/jobs.sqlite3
+      - REDIS_URL=redis://redis:6379/0
+      - MAX_PDF_PAGES=50
+      - PDF_DPI=220
+      - PADDLE_DEVICE=gpu:0
+    volumes:
+      - ocr_runs:/app/backend_runs
+      - ./output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+    container_name: ocr_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - api
+
+volumes:
+  redis_data:
+  ocr_runs:

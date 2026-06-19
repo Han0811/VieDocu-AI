@@ -1,0 +1,75 @@
+name: Build & Deploy Document OCR Production
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-run: '3.10'
+          python-version: '3.10'
+
+      - name: Install backend build deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install py_compile
+
+      - name: Compile check python backend
+        run: |
+          python -m py_compile backend/*.py
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Compile and Lint frontend
+        run: |
+          cd frontend
+          npm run build
+
+  deploy-on-premise:
+    needs: lint-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Uses self-hosted runner installed on the RTX 5070 Ti on-premise GPU server
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Stop running containers
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml down --remove-orphans || true
+
+      - name: Build and launch production stack
+        run: |
+          # Rebuild and run in background
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+
+      - name: Verify service health
+        run: |
+          # Wait for API container to come up
+          sleep 10
+          curl --fail http://localhost:8000/health || (docker compose logs api && exit 1)
+
+      - name: System cleanup
+        run: |
+          # Remove dangling images to save disk space
+          docker image prune -f

@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  redis:
+    # Disable port exposure to public internet in production
+    ports: []
+
+  api:
+    # Production overrides: restrict ports, enforce API keys, mount production SQLite/Postgres
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - ENABLE_API_KEY=true
+      - API_KEY=prod_secure_api_key_override_me_in_env
+      - CORS_ORIGINS=https://ocr.vietnamese-documents.org,http://localhost:3000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  worker:
+    environment:
+      - PADDLE_DEVICE=gpu:0
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  frontend:
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=https://ocr-api.vietnamese-documents.org

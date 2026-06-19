@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+output/
+data/viet_hf_v2/
+backend_runs/
+outputs_dococr*/
+.pytest_cache/
+backups/
+
+# Frontend builds and dependencies
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
+frontend/.env
+.env
+
